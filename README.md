@@ -2,19 +2,15 @@
 
 The goal of this project is to create a table tennis counter for the pebble watch.
 
-## Plan
+## Description
 
-The watch shows the score of the current game and the current match. Pressing the upper button increases the current score for the opponent, pressing the lower button increases the own score.
+The watch shows the score of the current game and the current match. Pressing the upper button increases the current score for the opponent, pressing the lower button increases the own score. When a side switch or a service alternation is due the watch vibrates. Short press on the select button pauses and unpauses the game. Long press on the select button starts a new game.
+
+See it in [action on Youtube](https://www.youtube.com/watch?v=vl_4QdbwIQ8).
 
 ## Planned features
 
-* Display game duration
-* Notification when a side switch is due
-* Notification when a service alternation is due
 * Notification when the match ends, announcing the winner
-
-## Possible future features
-
 * Corresponding Android app that keeps track of matches
 
 ## Notes
@@ -23,5 +19,5 @@ The watch shows the score of the current game and the current match. Pressing th
 
 ## Changelog
 
-* v0.1 ()
-** Initial release
+* v0.1 (19.05.2013)
+    * Initial release

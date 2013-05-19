@@ -6,4 +6,4 @@
 #define TXT_SCORE_SELF "M: %d"
 #define TXT_SCORE_OPPONENT "O: %d"
 #define TXT_MATCH "Score: %d:%d"
-#define TXT_DURATION "Duration: %d:%d"
+#define TXT_DURATION "Duration: %02d:%02d"
