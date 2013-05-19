@@ -2,6 +2,11 @@
 {"friendlyVersion": "VERSION",
  "versionDefName": "VERSION",
  "media": [
+ 		{
+        "type": "png",
+        "defName": "IMAGE_MENU_ICON",
+        "file": "images/menu_icon.png"
+        },
 	   {
 	    "type":"raw",
 	    "defName":"DUMMY",
