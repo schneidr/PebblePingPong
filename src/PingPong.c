@@ -45,9 +45,30 @@ void update_score(int me, int opponent) {
   if (score_me == 10 && score_opponent == 10) {
     overtime = true;
   }
-
   if (((count % 2) == 0 && overtime == false) || overtime) {
     vibes_short_pulse();
+  }
+
+  if ((!overtime && score_me == 11) || (overtime && (score_me >= (score_opponent + 2)))) {
+    match_me++;
+    score_me = 0;
+    score_opponent = 0;
+    overtime = false;
+    layer_mark_dirty(&match_layer);
+    vibes_double_pulse();
+  }
+
+  if ((!overtime && score_opponent == 11) || (overtime && (score_opponent >= (score_me + 2)))) {
+    match_opponent++;
+    score_me = 0;
+    score_opponent = 0;
+    overtime = false;
+    layer_mark_dirty(&match_layer);
+    vibes_double_pulse();
+  }
+
+  if (match_me == 3 || match_opponent == 3) {
+    vibes_long_pulse();
   }
 
   layer_mark_dirty(&score_layer_me);
