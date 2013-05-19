@@ -35,10 +35,21 @@ int match_opponent = 0;
 int score_me = 0;
 int score_opponent = 0;
 int duration_seconds;
+int count = 0;
+bool overtime = false;
 
 void update_score(int me, int opponent) {
   score_me += me;
   score_opponent += opponent;
+  count++;
+  if (score_me == 10 && score_opponent == 10) {
+    overtime = true;
+  }
+
+  if (((count % 2) == 0 && overtime == false) || overtime) {
+    vibes_short_pulse();
+  }
+
   layer_mark_dirty(&score_layer_me);
   layer_mark_dirty(&score_layer_opponent);
 }
@@ -123,6 +134,8 @@ void start_match() {
   score_me = 0;
   score_opponent = 0;
   duration_seconds = 0;
+  count = 0;
+  overtime = false;
 }
 
 void handle_tick(AppContextRef ctx, PebbleTickEvent *event) {
