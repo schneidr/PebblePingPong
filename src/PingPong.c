@@ -37,6 +37,7 @@ int score_opponent = 0;
 int duration_seconds;
 int count = 0;
 bool overtime = false;
+bool paused = false;
 
 void update_score(int me, int opponent) {
   score_me += me;
@@ -68,6 +69,7 @@ void update_score(int me, int opponent) {
   }
 
   if (match_me == 3 || match_opponent == 3) {
+    paused = true;
     vibes_long_pulse();
   }
 
@@ -141,14 +143,6 @@ void update_duration_layer_callback(Layer *me, GContext* ctx) {
          NULL);
 }
 
-void select_up_click_handler(ClickRecognizerRef recognizer, Window *window) {
-  update_score(0, 1);
-}
-
-void select_down_click_handler(ClickRecognizerRef recognizer, Window *window) {
-  update_score(1, 0);
-}
-
 void start_match() {
   match_me = 0;
   match_opponent = 0;
@@ -157,27 +151,50 @@ void start_match() {
   duration_seconds = 0;
   count = 0;
   overtime = false;
+  paused = false;
+}
+
+void up_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
+  if (paused) return;
+  update_score(0, 1);
+}
+
+void down_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
+  if (paused) return;
+  update_score(1, 0);
+}
+
+void select_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
+  paused = !paused;
+}
+
+void select_long_click_handler(ClickRecognizerRef recognizer, Window *window) {
+  start_match();
+  layer_mark_dirty(&duration_layer);
 }
 
 void handle_tick(AppContextRef ctx, PebbleTickEvent *event) {
   (void)ctx;
   (void)event;
+  if (paused) return;
   duration_seconds++;
+  layer_mark_dirty(&match_layer);
+  layer_mark_dirty(&score_layer_opponent);
+  layer_mark_dirty(&score_layer_me);
   layer_mark_dirty(&duration_layer);
 }
 
 
 void config_provider(ClickConfig **config, Window *window) {
-  config[BUTTON_ID_UP ]->click.handler = (ClickHandler) select_up_click_handler;
+  config[BUTTON_ID_UP ]->click.handler = (ClickHandler) up_single_click_handler;
   config[BUTTON_ID_UP ]->click.repeat_interval_ms = 1000;
-  config[BUTTON_ID_DOWN ]->click.handler = (ClickHandler) select_down_click_handler;
+  config[BUTTON_ID_DOWN ]->click.handler = (ClickHandler) down_single_click_handler;
   config[BUTTON_ID_DOWN ]->click.repeat_interval_ms = 1000;
-/*  config[BUTTON_ID_SELECT]->click.handler = (ClickHandler) select_single_click_handler;
-  config[BUTTON_ID_SELECT]->click.repeat_interval_ms = 1000;*/
+  config[BUTTON_ID_SELECT]->click.handler = (ClickHandler) select_single_click_handler;
+  config[BUTTON_ID_SELECT]->click.repeat_interval_ms = 1000;
   // long click config:
-/*  config[BUTTON_ID_SELECT]->long_click.handler = (ClickHandler) select_long_click_handler;
-  config[BUTTON_ID_SELECT]->long_click.release_handler = (ClickHandler) select_long_click_release_handler;
-  config[BUTTON_ID_SELECT]->long_click.delay_ms = 700;*/
+  config[BUTTON_ID_SELECT]->long_click.handler = (ClickHandler) select_long_click_handler;
+  config[BUTTON_ID_SELECT]->long_click.delay_ms = 700;
 }
 
 void handle_init(AppContextRef ctx) {
