@@ -1,31 +1,28 @@
 #include "pebble_os.h"
 #include "pebble_app.h"
 #include "pebble_fonts.h"
+#include "mini-printf.h"
 
 #include "lang_de.h"
 
 #define MY_UUID { 0xEC, 0x10, 0x26, 0xB1, 0xBA, 0xE2, 0x47, 0xFA, 0x92, 0x89, 0x7B, 0x0E, 0x4C, 0xFC, 0x18, 0x2F }
 PBL_APP_INFO(MY_UUID,
- TXT_TITLE, "Gerald Schneider",
-             0, 1, /* App version */
- RESOURCE_ID_IMAGE_MENU_ICON,
-             //IMAGE_MENU_ICON,
- APP_INFO_STANDARD_APP);
+            TXT_TITLE, "Gerald Schneider",
+            0, 1,
+            RESOURCE_ID_IMAGE_MENU_ICON,
+            APP_INFO_STANDARD_APP);
 
 #define FRAME_MATCH (GRect(5, 0, 144-10, 20))
-#define FRAME_SCORE_ME (GRect(5, 20, 144-10, 100))
-#define FRAME_SCORE_OPPONENT (GRect(5, 75, 144-10, 100))
+#define FRAME_SCORE_ME (GRect(5, 75, 144-10, 100))
+#define FRAME_SCORE_OPPONENT (GRect(5, 20, 144-10, 100))
 #define FRAME_DURATION (GRect(5, 168-40, 144-10, 20))
 
 #define TEXT_COLOR GColorBlack
 #define BACKGROUND_COLOR GColorClear
 
-#define FONT_MATCH FONT_KEY_GOTHIC_18
+#define FONT_MATCH FONT_KEY_GOTHIC_18_BOLD
 #define FONT_SCORE FONT_KEY_GOTHAM_42_BOLD
 #define FONT_DURATION FONT_KEY_GOTHIC_18
-
-// https://github.com/iNate71/RobotoClock/blob/master/src/jelly_bean_clock.c
-// http://en.wikipedia.org/wiki/Ping_pong
 
 Window window;
 Layer match_layer;
@@ -37,14 +34,21 @@ int match_me = 0;
 int match_opponent = 0;
 int score_me = 0;
 int score_opponent = 0;
+int duration_seconds;
+
+/*void update_score(int me, int opponent) {
+
+}*/
 
 void update_match_layer_callback(Layer *me, GContext* ctx) {
   (void)me;
 
   graphics_context_set_text_color(ctx, TEXT_COLOR);
 
+  static char txt[21];
+  mini_snprintf(txt, 20, TXT_MATCH, match_me, match_opponent);
   graphics_text_draw(ctx,
-         TXT_MATCH,
+         txt,
          fonts_get_system_font(FONT_MATCH),
          FRAME_MATCH,
          GTextOverflowModeWordWrap,
@@ -57,10 +61,10 @@ void update_score_layer_me_callback(Layer *me, GContext* ctx) {
 
   graphics_context_set_text_color(ctx, TEXT_COLOR);
 
-  //char* scoreSelf;
-  //sprintf(scoreSelf, TXT_ScoreSelf, 0);
+  static char txt[11];
+  mini_snprintf(txt, 10, TXT_SCORE_SELF, score_me);
   graphics_text_draw(ctx,
-         TXT_SCORE_SELF,
+         txt,
          fonts_get_system_font(FONT_SCORE),
          FRAME_SCORE_ME,
          GTextOverflowModeWordWrap,
@@ -73,8 +77,10 @@ void update_score_layer_opponent_callback(Layer *me, GContext* ctx) {
 
   graphics_context_set_text_color(ctx, TEXT_COLOR);
 
+  static char txt[11];
+  mini_snprintf(txt, 10, TXT_SCORE_OPPONENT, score_opponent);
   graphics_text_draw(ctx,
-         TXT_SCORE_OPPONENT,
+         txt,
          fonts_get_system_font(FONT_SCORE),
          FRAME_SCORE_OPPONENT,
          GTextOverflowModeWordWrap,
@@ -87,8 +93,12 @@ void update_duration_layer_callback(Layer *me, GContext* ctx) {
 
   graphics_context_set_text_color(ctx, TEXT_COLOR);
 
+  int minutes = (int)duration_seconds / 60;
+  int seconds = duration_seconds % 60;
+  static char txt[21];
+  mini_snprintf(txt, 20, TXT_DURATION, minutes, seconds);
   graphics_text_draw(ctx,
-         TXT_DURATION,
+         txt,
          fonts_get_system_font(FONT_DURATION),
          FRAME_DURATION,
          GTextOverflowModeWordWrap,
@@ -96,11 +106,29 @@ void update_duration_layer_callback(Layer *me, GContext* ctx) {
          NULL);
 }
 
+void start_match() {
+  match_me = 0;
+  match_opponent = 0;
+  score_me = 0;
+  score_opponent = 0;
+  duration_seconds = 0;
+}
+
+void handle_tick(AppContextRef ctx, PebbleTickEvent *event) {
+  (void)ctx;
+  (void)event;
+  duration_seconds++;
+  layer_mark_dirty(&duration_layer);
+}
+
+
 void handle_init(AppContextRef ctx) {
   (void)ctx;
 
   window_init(&window, TXT_TITLE);
   window_stack_push(&window, true /* Animated */);
+
+  start_match();
 
   layer_init(&score_layer_me, window.layer.frame);
   score_layer_me.update_proc = update_score_layer_me_callback;
@@ -126,7 +154,11 @@ void handle_init(AppContextRef ctx) {
 
 void pbl_main(void *params) {
   PebbleAppHandlers handlers = {
-    .init_handler = &handle_init
+    .init_handler = &handle_init,
+    .tick_info = {
+      .tick_handler = &handle_tick,
+      .tick_units = SECOND_UNIT
+    }
   };
 
   app_event_loop(params, &handlers);

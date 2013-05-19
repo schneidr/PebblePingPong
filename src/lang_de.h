@@ -5,5 +5,5 @@
 #define TXT_TITLE "Tischtennis"
 #define TXT_SCORE_SELF "I: %d"
 #define TXT_SCORE_OPPONENT "G: %d"
-#define TXT_MATCH "%d:%d"
-#define TXT_DURATION "Dauer: %d:%d"
+#define TXT_MATCH "Stand: %d:%d"
+#define TXT_DURATION "Dauer: %02d:%02d"
