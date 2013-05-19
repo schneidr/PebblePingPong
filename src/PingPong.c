@@ -36,9 +36,12 @@ int score_me = 0;
 int score_opponent = 0;
 int duration_seconds;
 
-/*void update_score(int me, int opponent) {
-
-}*/
+void update_score(int me, int opponent) {
+  score_me += me;
+  score_opponent += opponent;
+  layer_mark_dirty(&score_layer_me);
+  layer_mark_dirty(&score_layer_opponent);
+}
 
 void update_match_layer_callback(Layer *me, GContext* ctx) {
   (void)me;
@@ -106,6 +109,14 @@ void update_duration_layer_callback(Layer *me, GContext* ctx) {
          NULL);
 }
 
+void select_up_click_handler(ClickRecognizerRef recognizer, Window *window) {
+  update_score(0, 1);
+}
+
+void select_down_click_handler(ClickRecognizerRef recognizer, Window *window) {
+  update_score(1, 0);
+}
+
 void start_match() {
   match_me = 0;
   match_opponent = 0;
@@ -122,6 +133,19 @@ void handle_tick(AppContextRef ctx, PebbleTickEvent *event) {
 }
 
 
+void config_provider(ClickConfig **config, Window *window) {
+  config[BUTTON_ID_UP ]->click.handler = (ClickHandler) select_up_click_handler;
+  config[BUTTON_ID_UP ]->click.repeat_interval_ms = 1000;
+  config[BUTTON_ID_DOWN ]->click.handler = (ClickHandler) select_down_click_handler;
+  config[BUTTON_ID_DOWN ]->click.repeat_interval_ms = 1000;
+/*  config[BUTTON_ID_SELECT]->click.handler = (ClickHandler) select_single_click_handler;
+  config[BUTTON_ID_SELECT]->click.repeat_interval_ms = 1000;*/
+  // long click config:
+/*  config[BUTTON_ID_SELECT]->long_click.handler = (ClickHandler) select_long_click_handler;
+  config[BUTTON_ID_SELECT]->long_click.release_handler = (ClickHandler) select_long_click_release_handler;
+  config[BUTTON_ID_SELECT]->long_click.delay_ms = 700;*/
+}
+
 void handle_init(AppContextRef ctx) {
   (void)ctx;
 
@@ -129,6 +153,8 @@ void handle_init(AppContextRef ctx) {
   window_stack_push(&window, true /* Animated */);
 
   start_match();
+
+  window_set_click_config_provider(&window, (ClickConfigProvider) config_provider);
 
   layer_init(&score_layer_me, window.layer.frame);
   score_layer_me.update_proc = update_score_layer_me_callback;
