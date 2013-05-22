@@ -3,12 +3,12 @@
 #include "pebble_fonts.h"
 #include "mini-printf.h"
 
-#include "lang_en.h"
+#include "lang_de.h"
 
 #define MY_UUID { 0xEC, 0x10, 0x26, 0xB1, 0xBA, 0xE2, 0x47, 0xFA, 0x92, 0x89, 0x7B, 0x0E, 0x4C, 0xFC, 0x18, 0x2F }
 PBL_APP_INFO(MY_UUID,
             TXT_TITLE, "Gerald Schneider",
-            0, 1,
+            0, 2,
             RESOURCE_ID_IMAGE_MENU_ICON,
             APP_INFO_STANDARD_APP);
 
@@ -16,6 +16,7 @@ PBL_APP_INFO(MY_UUID,
 #define FRAME_SCORE_ME (GRect(5, 75, 144-10, 100))
 #define FRAME_SCORE_OPPONENT (GRect(5, 20, 144-10, 100))
 #define FRAME_DURATION (GRect(5, 168-40, 144-10, 20))
+#define FRAME_NOTIFICATION (GRect(5, 49, 144-10, 69))
 
 #define TEXT_COLOR GColorBlack
 #define BACKGROUND_COLOR GColorClear
@@ -29,11 +30,14 @@ PBL_APP_INFO(MY_UUID,
 #define VIBE_DOUBLE 2
 #define VIBE_LONG 3
 
+#define COOKIE_REMOVE_NOTIFICATION 1
+
 Window window;
 Layer match_layer;
 Layer score_layer_me;
 Layer score_layer_opponent;
 Layer duration_layer;
+TextLayer layer_notification;
 
 int match_me = 0;
 int match_opponent = 0;
@@ -43,17 +47,33 @@ int duration_seconds;
 int count = 0;
 bool overtime = false;
 bool paused = false;
+int notification_length = -1;
+
+void show_notification(char* text) {
+  text_layer_set_text(&layer_notification, text);
+  layer_add_child(&window.layer, (Layer *)&layer_notification);
+  notification_length = 2;
+}
+
+void hide_notification() {
+  layer_remove_from_parent((Layer *)&layer_notification);
+}
 
 void update_score(int me, int opponent) {
   int vibrate = VIBE_NONE;
   score_me += me;
   score_opponent += opponent;
   count++;
+
+
   if (score_me == 10 && score_opponent == 10) {
     overtime = true;
   }
   if (((count % 2) == 0 && overtime == false) || overtime) {
     vibrate = VIBE_SINGLE;
+    /*static char txt[11];
+    mini_snprintf(txt, 10, TXT_SCORE_OPPONENT, score_opponent);*/
+    show_notification(TXT_ALTERNATE_SERVE);
   }
 
   if ((!overtime && score_me == 11) || (overtime && (score_me >= (score_opponent + 2)))) {
@@ -64,6 +84,7 @@ void update_score(int me, int opponent) {
     overtime = false;
     layer_mark_dirty(&match_layer);
     vibrate = VIBE_DOUBLE;
+    show_notification(TXT_SWITCH_SIDE);
   }
 
   if ((!overtime && score_opponent == 11) || (overtime && (score_opponent >= (score_me + 2)))) {
@@ -74,11 +95,18 @@ void update_score(int me, int opponent) {
     overtime = false;
     layer_mark_dirty(&match_layer);
     vibrate = VIBE_DOUBLE;
+    show_notification(TXT_SWITCH_SIDE);
   }
 
-  if (match_me == 3 || match_opponent == 3) {
+  if (match_me == 3) {
     paused = true;
     vibrate = VIBE_LONG;
+    show_notification(TXT_MATCH_WON);
+  }
+  else if (match_opponent == 3) {
+    paused = true;
+    vibrate = VIBE_LONG;
+    show_notification(TXT_MATCH_LOST);
   }
   
   switch (vibrate) {
@@ -174,6 +202,7 @@ void start_match() {
   paused = false;
 }
 
+
 void up_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
   if (paused) return;
   update_score(0, 1);
@@ -197,7 +226,17 @@ void handle_tick(AppContextRef ctx, PebbleTickEvent *event) {
   (void)ctx;
   (void)event;
   if (paused) return;
+
   duration_seconds++;
+
+  if (notification_length > 0)  {
+    notification_length--;
+  }
+  if (notification_length == 0) {
+    hide_notification();
+    notification_length = -1;
+  }
+
   layer_mark_dirty(&match_layer);
   layer_mark_dirty(&score_layer_opponent);
   layer_mark_dirty(&score_layer_me);
@@ -206,20 +245,17 @@ void handle_tick(AppContextRef ctx, PebbleTickEvent *event) {
 
 
 void config_provider(ClickConfig **config, Window *window) {
-  config[BUTTON_ID_UP ]->click.handler = (ClickHandler) up_single_click_handler;
-  config[BUTTON_ID_UP ]->click.repeat_interval_ms = 1000;
-  config[BUTTON_ID_DOWN ]->click.handler = (ClickHandler) down_single_click_handler;
-  config[BUTTON_ID_DOWN ]->click.repeat_interval_ms = 1000;
+  config[BUTTON_ID_UP]->click.handler = (ClickHandler) up_single_click_handler;
+  config[BUTTON_ID_UP]->click.repeat_interval_ms = 1000;
+  config[BUTTON_ID_DOWN]->click.handler = (ClickHandler) down_single_click_handler;
+  config[BUTTON_ID_DOWN]->click.repeat_interval_ms = 1000;
   config[BUTTON_ID_SELECT]->click.handler = (ClickHandler) select_single_click_handler;
   config[BUTTON_ID_SELECT]->click.repeat_interval_ms = 1000;
-  // long click config:
   config[BUTTON_ID_SELECT]->long_click.handler = (ClickHandler) select_long_click_handler;
   config[BUTTON_ID_SELECT]->long_click.delay_ms = 700;
 }
 
 void handle_init(AppContextRef ctx) {
-  (void)ctx;
-
   window_init(&window, TXT_TITLE);
   window_stack_push(&window, true /* Animated */);
 
@@ -246,6 +282,13 @@ void handle_init(AppContextRef ctx) {
   duration_layer.update_proc = update_duration_layer_callback;
   layer_add_child(&window.layer, &duration_layer);
   layer_mark_dirty(&duration_layer);
+
+  text_layer_init(&layer_notification, FRAME_NOTIFICATION);
+  text_layer_set_background_color(&layer_notification, GColorBlack);
+  text_layer_set_text_color(&layer_notification, GColorWhite);
+  text_layer_set_font(&layer_notification, fonts_get_system_font(FONT_KEY_GOTHIC_28));
+  text_layer_set_text_alignment(&layer_notification, GTextAlignmentCenter);
+  text_layer_set_overflow_mode(&layer_notification, GTextOverflowModeWordWrap);
 
 }
 
