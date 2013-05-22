@@ -24,6 +24,11 @@ PBL_APP_INFO(MY_UUID,
 #define FONT_SCORE FONT_KEY_GOTHAM_42_BOLD
 #define FONT_DURATION FONT_KEY_GOTHIC_18
 
+#define VIBE_NONE 0
+#define VIBE_SINGLE 1
+#define VIBE_DOUBLE 2
+#define VIBE_LONG 3
+
 Window window;
 Layer match_layer;
 Layer score_layer_me;
@@ -40,6 +45,7 @@ bool overtime = false;
 bool paused = false;
 
 void update_score(int me, int opponent) {
+  int vibrate = VIBE_NONE;
   score_me += me;
   score_opponent += opponent;
   count++;
@@ -47,30 +53,44 @@ void update_score(int me, int opponent) {
     overtime = true;
   }
   if (((count % 2) == 0 && overtime == false) || overtime) {
-    vibes_short_pulse();
+    vibrate = VIBE_SINGLE;
   }
 
   if ((!overtime && score_me == 11) || (overtime && (score_me >= (score_opponent + 2)))) {
     match_me++;
     score_me = 0;
     score_opponent = 0;
+    count = 0;
     overtime = false;
     layer_mark_dirty(&match_layer);
-    vibes_double_pulse();
+    vibrate = VIBE_DOUBLE;
   }
 
   if ((!overtime && score_opponent == 11) || (overtime && (score_opponent >= (score_me + 2)))) {
     match_opponent++;
     score_me = 0;
     score_opponent = 0;
+    count = 0;
     overtime = false;
     layer_mark_dirty(&match_layer);
-    vibes_double_pulse();
+    vibrate = VIBE_DOUBLE;
   }
 
   if (match_me == 3 || match_opponent == 3) {
     paused = true;
-    vibes_long_pulse();
+    vibrate = VIBE_LONG;
+  }
+  
+  switch (vibrate) {
+    case VIBE_SINGLE:
+      vibes_short_pulse();
+      break;
+    case VIBE_DOUBLE:
+      vibes_double_pulse();
+      break;
+    case VIBE_LONG:
+      vibes_long_pulse();
+      break;
   }
 
   layer_mark_dirty(&score_layer_me);
