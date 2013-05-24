@@ -11,3 +11,4 @@
 #define TXT_SWITCH_SIDE "Seitenwechsel"
 #define TXT_MATCH_LOST "Spiel verloren"
 #define TXT_MATCH_WON "Spiel gewonnen"
+#define TXT_PAUSE "Pause"

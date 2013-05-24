@@ -11,3 +11,4 @@
 #define TXT_SWITCH_SIDE "Switch sides"
 #define TXT_MATCH_LOST "Match lost"
 #define TXT_MATCH_WON "Match won"
+#define TXT_PAUSE "Paused"
